@@ -13,7 +13,7 @@ WORKDIR /app
 
 # Copiar solo los manifests primero (aprovecha cache de Docker)
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 
 # Copiar el código fuente
 COPY src/       ./src/
@@ -32,7 +32,7 @@ WORKDIR /app
 
 # Solo las dependencias de producción
 COPY package*.json ./
-RUN npm ci --only=production --ignore-scripts && npm cache clean --force
+RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copiar el servidor
 COPY server/ ./server/
