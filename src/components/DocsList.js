@@ -62,7 +62,7 @@ export class DocsList {
 
     container.querySelectorAll('tr[data-id]').forEach(row => {
       const id  = row.dataset.id;
-      const doc = docs.find(d => d.document_id === id);
+      const doc = docs.find(d => String(d.document_id) === id);
       const fn  = () => doc && this._viewDoc(doc);
       row.addEventListener('click', fn);
       row.querySelector('.btn-ver')?.addEventListener('click', e => { e.stopPropagation(); fn(); });
