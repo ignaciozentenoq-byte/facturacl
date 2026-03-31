@@ -1,0 +1,16 @@
+{
+  "name": "facturacl",
+  "version": "1.0.0",
+  "description": "FacturaCL — Módulo de facturación electrónica vía Koywe",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

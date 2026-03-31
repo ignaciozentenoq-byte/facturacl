@@ -13,9 +13,7 @@
 <div id="topbar">
   <div class="tb-logo" onclick="gotoView('dashboard')">
     <div class="tb-logo-mark">🧾</div>
-    <div>
-      <div class="tb-brand">FacturaCL</div>
-    </div>
+    <div><div class="tb-brand">FacturaCL</div></div>
   </div>
   <div class="tb-env" id="env-badge">SANDBOX</div>
   <div class="tb-sep"></div>
@@ -38,22 +36,26 @@
     <button class="nav-btn" id="nb-nueva"     onclick="gotoView('nueva')">➕<span class="tip">Nuevo documento</span></button>
     <button class="nav-btn" id="nb-docs"      onclick="gotoView('docs')">📄<span class="tip">Documentos</span></button>
     <div class="nav-sep"></div>
+    <button class="nav-btn" id="nb-api"       onclick="gotoView('api')">🔌<span class="tip">API Tester</span></button>
     <button class="nav-btn" id="nb-config"    onclick="gotoView('config')">⚙<span class="tip">Configuración</span></button>
   </div>
 
   <!-- MAIN -->
   <div id="main">
 
-    <!-- ════ DASHBOARD ════ -->
+    <!-- DASHBOARD -->
     <div class="view" id="view-dashboard"></div>
 
-    <!-- ════ NUEVA FACTURA ════ -->
+    <!-- NUEVA FACTURA -->
     <div class="view" id="view-nueva"></div>
 
-    <!-- ════ DOCUMENTOS ════ -->
+    <!-- DOCUMENTOS -->
     <div class="view" id="view-docs"></div>
 
-    <!-- ════ CONFIG ════ -->
+    <!-- API TESTER -->
+    <div class="view" id="view-api"></div>
+
+    <!-- CONFIG -->
     <div class="view" id="view-config">
       <div class="page-title">Configuración</div>
       <div class="page-sub">Datos del emisor y conexión con Koywe</div>
@@ -81,11 +83,11 @@
         <div class="card-hdr">
           <div>
             <div class="card-title">Datos del emisor</div>
-            <div class="card-sub">Se configuran en el servidor (.env). Estos campos son solo de referencia.</div>
+            <div class="card-sub">Configurados en el servidor (.env)</div>
           </div>
         </div>
         <div class="fr fr2">
-          <div class="fg"><label class="fl">RUT emisor</label><input class="fi mono" id="cfg-rut"   value="" readonly></div>
+          <div class="fg"><label class="fl">RUT emisor</label><input class="fi mono" id="cfg-rut" value="" readonly></div>
           <div class="fg"><label class="fl">Razón social</label><input class="fi" id="cfg-razon" value="" readonly></div>
         </div>
         <div class="fr fr2">
@@ -97,13 +99,13 @@
           <div class="fg"><label class="fl">Comuna</label><input class="fi" id="cfg-district" value="" readonly></div>
         </div>
         <p style="font-size:11px;color:var(--text3);margin-top:4px">
-          Para cambiar estos valores, edita las variables de entorno en Railway/Azure y redeploy.
+          Para cambiar estos valores edita las variables de entorno en Railway y redeploy.
         </p>
       </div>
     </div>
 
-  </div><!-- /main -->
-</div><!-- /layout -->
+  </div>
+</div>
 
 <!-- MODAL -->
 <div id="modal-bg">
@@ -119,8 +121,6 @@
 <!-- NOTIFICACIONES -->
 <div id="notif-container"></div>
 
-<!-- APP -->
 <script type="module" src="./main.js"></script>
-
 </body>
 </html>

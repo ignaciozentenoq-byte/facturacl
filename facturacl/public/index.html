@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FacturaCL — Facturación Electrónica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fb;--bg2:#fff;--bg3:#f0f2f9;--bg4:#e6e9f5;
+  --border:#e0e3f0;--border2:#c8ccdf;
+  --text:#0d1030;--text2:#44496a;--text3:#8890b5;
+  --accent:#4361ee;--accent2:#3451d1;--accentbg:#eef1ff;
+  --green:#059669;--greenbg:#ecfdf5;--green2:#d1fae5;
+  --amber:#d97706;--amberbg:#fffbeb;--amber2:#fde68a;
+  --red:#dc2626;--redbg:#fef2f2;--red2:#fecaca;
+  --purple:#7c3aed;--purplebg:#f5f3ff;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r:8px;--r2:12px;--r3:16px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.06);
+  --shadow2:0 4px 24px rgba(0,0,0,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;display:flex;flex-direction:column;}
+button,input,select,textarea{font-family:var(--font);}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px;}
+
+/* TOPBAR */
+#topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;box-shadow:var(--shadow);}
+.tb-logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.tb-logo-mark{width:34px;height:34px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.tb-brand{font-size:15px;font-weight:700;letter-spacing:-.3px;}
+.tb-env{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--amberbg);color:var(--amber);font-weight:600;border:1px solid var(--amber2);font-family:var(--mono);}
+.tb-sep{width:1px;height:20px;background:var(--border);}
+.tb-spacer{flex:1;}
+.tb-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:12px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .14s;white-space:nowrap;}
+.tb-btn:hover{background:var(--bg4);border-color:var(--border2);color:var(--text);}
+.tb-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.tb-btn.primary:hover{background:var(--accent2);}
+.conn-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);}
+.conn-dot.connected{background:var(--green);}
+.conn-dot.connecting{background:var(--amber);animation:blink 1s ease-in-out infinite;}
+.conn-dot.error{background:var(--red);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* LAYOUT */
+#layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDENAV */
+#sidenav{width:52px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:3px;flex-shrink:0;}
+.nav-btn{width:38px;height:38px;border-radius:var(--r2);border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);transition:all .14s;position:relative;}
+.nav-btn:hover{background:var(--bg3);color:var(--text);}
+.nav-btn.active{background:var(--accentbg);color:var(--accent);}
+.nav-btn .tip{position:absolute;left:46px;background:var(--text);color:#fff;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:500;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:100;font-family:var(--font);}
+.nav-btn:hover .tip{opacity:1;}
+.nav-sep{width:24px;height:1px;background:var(--border);margin:4px 0;}
+.nav-badge{position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.view{display:none;flex:1;overflow-y:auto;padding:24px 28px;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent;}
+.view.active{display:block;}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);}
+.card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:600;}
+.card-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.card-spacer{flex:1;}
+.cg{display:grid;gap:14px;margin-bottom:0;}
+.cg2{grid-template-columns:1fr 1fr;}
+.cg3{grid-template-columns:1fr 1fr 1fr;}
+.cg4{grid-template-columns:1fr 1fr 1fr 1fr;}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.fl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;}
+.fl .req{color:var(--red);}
+.fi{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;padding:8px 11px;outline:none;transition:border-color .15s;width:100%;}
+.fi:focus{border-color:var(--accent);background:var(--bg2);}
+.fi::placeholder{color:var(--text3);}
+.fi.mono{font-family:var(--mono);font-size:12px;}
+.fi.error{border-color:var(--red);}
+.fs{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;padding:8px 28px 8px 11px;outline:none;cursor:pointer;width:100%;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238890b5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+.fs:focus{border-color:var(--accent);outline:none;}
+.fr{display:grid;gap:10px;}
+.fr2{grid-template-columns:1fr 1fr;}
+.fr3{grid-template-columns:1fr 1fr 1fr;}
+.fta{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;padding:8px 11px;outline:none;resize:vertical;min-height:64px;width:100%;line-height:1.5;}
+.fta:focus{border-color:var(--accent);}
+.fsec{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.fsec:first-child{margin-top:0;}
+
+/* DOC TYPE SELECTOR */
+.doc-types{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
+.dt-btn{padding:10px 8px;border-radius:var(--r2);border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;text-align:center;transition:all .14s;}
+.dt-btn:hover{border-color:var(--border2);background:var(--bg4);}
+.dt-btn.selected{border-color:var(--accent);background:var(--accentbg);}
+.dt-icon{font-size:20px;margin-bottom:4px;}
+.dt-name{font-size:11px;font-weight:600;color:var(--text2);}
+.dt-id{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
+.dt-btn.selected .dt-name{color:var(--accent);}
+
+/* ITEMS TABLE */
+.items-table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+.items-table thead th{padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--bg3);}
+.items-table tbody tr{border-bottom:1px solid var(--border);}
+.items-table tbody tr:last-child{border-bottom:none;}
+.items-table td{padding:6px 6px;vertical-align:middle;}
+.items-table .fi{padding:6px 8px;font-size:12px;}
+.items-table .fs{padding:6px 24px 6px 8px;font-size:12px;}
+.del-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--red2);background:var(--redbg);color:var(--red);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;}
+.del-btn:hover{background:var(--red);color:#fff;}
+.add-item-btn{width:100%;padding:8px;border-radius:var(--r);border:1.5px dashed var(--border2);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;transition:all .14s;margin-bottom:14px;}
+.add-item-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accentbg);}
+
+/* TOTALS */
+.totals-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;}
+.totals-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
+.totals-row.total{font-size:17px;font-weight:700;padding-top:8px;margin-top:6px;border-top:2px solid var(--border2);}
+.totals-row .lbl{color:var(--text2);}
+.totals-row .val{font-family:var(--mono);font-weight:600;}
+.totals-row.total .val{color:var(--green);}
+.totals-row.discount-row{color:var(--amber);}
+
+/* ACTION BAR */
+.action-bar{display:flex;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.btn-primary{flex:1;padding:12px;border-radius:var(--r2);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-primary:disabled{background:var(--bg4);color:var(--text3);cursor:not-allowed;}
+.btn-secondary{padding:12px 18px;border-radius:var(--r2);border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer;transition:all .14s;}
+.btn-secondary:hover{background:var(--bg4);color:var(--text);}
+.btn-preview{padding:12px 18px;border-radius:var(--r2);border:1px solid #c7d3ff;background:var(--accentbg);color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;transition:all .14s;}
+.btn-preview:hover{background:var(--accent);color:#fff;}
+
+/* DOCUMENT LIST */
+.doc-tbl{width:100%;border-collapse:collapse;}
+.doc-tbl thead th{padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--border);background:var(--bg3);}
+.doc-tbl tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;}
+.doc-tbl tbody tr:hover{background:var(--bg3);}
+.doc-tbl td{padding:11px 12px;font-size:13px;vertical-align:middle;}
+.doc-type-chip{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.chip-boleta{background:var(--accentbg);color:var(--accent);}
+.chip-factura{background:var(--purplebg);color:var(--purple);}
+.chip-nc{background:var(--amberbg);color:var(--amber);}
+.doc-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:5px;}
+.dsd-ok{background:var(--green);}
+.dsd-pend{background:var(--amber);}
+.dsd-err{background:var(--red);}
+
+/* API TESTER */
+.api-panel{display:grid;grid-template-columns:1fr 1fr;gap:16px;height:calc(100vh - 180px);}
+.api-col{display:flex;flex-direction:column;gap:10px;overflow:hidden;}
+.api-col-title{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.code-area{flex:1;background:#0f1117;border:1px solid #1e2230;border-radius:var(--r2);padding:14px;font-family:var(--mono);font-size:11px;color:#e2e8f0;overflow:auto;white-space:pre;line-height:1.7;scrollbar-width:thin;scrollbar-color:#252a3a transparent;}
+.code-area.editable{outline:none;cursor:text;}
+.code-area.editable:focus{border-color:rgba(79,142,247,.4);}
+.api-method-bar{display:flex;gap:8px;align-items:center;}
+.method-chip{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono);}
+.mc-post{background:#dbeafe;color:#1d4ed8;}
+.mc-get{background:var(--green2);color:var(--green);}
+.endpoint-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px;font-family:var(--mono);padding:7px 10px;outline:none;}
+.endpoint-input:focus{border-color:var(--accent);}
+.run-btn{padding:7px 16px;border-radius:var(--r);border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:background .14s;white-space:nowrap;}
+.run-btn:hover{background:var(--green2);}
+
+/* STATUS BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;}
+.badge-ok{background:var(--greenbg);color:var(--green);}
+.badge-warn{background:var(--amberbg);color:var(--amber);}
+.badge-err{background:var(--redbg);color:var(--red);}
+.badge-info{background:var(--accentbg);color:var(--accent);}
+
+/* NOTIFICATION */
+#notif{position:fixed;top:64px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.notif-item{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 16px;font-size:13px;box-shadow:var(--shadow2);display:flex;align-items:center;gap:10px;transform:translateX(120%);transition:transform .25s ease;pointer-events:all;max-width:340px;}
+.notif-item.show{transform:translateX(0);}
+.notif-item.ni-success{border-color:var(--green2);background:var(--greenbg);}
+.notif-item.ni-error{border-color:var(--red2);background:var(--redbg);}
+.notif-item.ni-info{border-color:#c7d3ff;background:var(--accentbg);}
+.notif-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;margin-left:auto;line-height:1;}
+
+/* MODAL */
+#modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#modal-bg.open{display:flex;}
+#modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);width:560px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3);animation:popIn .18s ease;}
+@keyframes popIn{from{transform:scale(.93);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1;}
+.modal-title{font-size:15px;font-weight:700;}
+.modal-body{padding:20px;}
+.modal-close{width:28px;height:28px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.modal-close:hover{background:var(--bg4);}
+
+/* SPINNER */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spinA .7s linear infinite;}
+.spin.dark{border-color:rgba(67,97,238,.2);border-top-color:var(--accent);}
+@keyframes spinA{to{transform:rotate(360deg)}}
+
+/* METRICS */
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--shadow);}
+.metric-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.metric-val{font-size:22px;font-weight:700;font-family:var(--mono);}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+
+/* HIGHLIGHT */
+.hl{padding:12px 14px;border-radius:var(--r2);margin-bottom:12px;border-left:3px solid;font-size:12px;color:var(--text2);line-height:1.6;}
+.hl-green{background:var(--greenbg);border-color:var(--green);}
+.hl-amber{background:var(--amberbg);border-color:var(--amber);}
+.hl-blue{background:var(--accentbg);border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="tb-logo" onclick="gotoView('dashboard')">
+    <div class="tb-logo-mark">🧾</div>
+    <div>
+      <div class="tb-brand">FacturaCL</div>
+    </div>
+  </div>
+  <div class="tb-env" id="env-badge">SANDBOX</div>
+  <div class="tb-sep"></div>
+  <div class="conn-status">
+    <div class="conn-dot connecting" id="conn-dot"></div>
+    <span id="conn-label">Conectando con Koywe…</span>
+  </div>
+  <div class="tb-spacer"></div>
+  <div style="font-size:12px;color:var(--text3)">RUT: <span id="top-rut" class="mono" style="color:var(--text2)">76.399.932-7</span></div>
+  <button class="tb-btn" onclick="gotoView('config')">⚙ Config</button>
+  <button class="tb-btn primary" onclick="gotoView('nueva')">+ Nueva factura</button>
+</div>
+
+<!-- LAYOUT -->
+<div id="layout">
+
+  <!-- SIDENAV -->
+  <div id="sidenav">
+    <button class="nav-btn active" id="nb-dashboard" onclick="gotoView('dashboard')">📊<span class="tip">Dashboard</span></button>
+    <button class="nav-btn" id="nb-nueva"     onclick="gotoView('nueva')">➕<span class="tip">Nuevo documento</span></button>
+    <button class="nav-btn" id="nb-docs"      onclick="gotoView('docs')">📄<span class="tip">Documentos</span></button>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" id="nb-api"       onclick="gotoView('api')">🔌<span class="tip">API Tester</span></button>
+    <button class="nav-btn" id="nb-config"    onclick="gotoView('config')">⚙<span class="tip">Configuración</span></button>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- ════ DASHBOARD ════════════════════════════════ -->
+    <div class="view active" id="view-dashboard">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">Dashboard</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Resumen de facturación electrónica · Koywe Sandbox</div>
+
+      <div class="hl hl-green">✅ Conexión con Koywe establecida. Usando credenciales sandbox Chile — <strong>account_id: 423</strong> · RUT demo: 76.399.932-7</div>
+
+      <div class="cg cg4" style="margin-bottom:20px">
+        <div class="metric"><div class="metric-lbl">Documentos emitidos</div><div class="metric-val" id="m-total" style="color:var(--accent)">0</div><div class="metric-sub">en esta sesión</div></div>
+        <div class="metric"><div class="metric-lbl">Boletas emitidas</div><div class="metric-val" id="m-boletas" style="color:var(--green)">0</div><div class="metric-sub">type 37</div></div>
+        <div class="metric"><div class="metric-lbl">Facturas emitidas</div><div class="metric-val" id="m-facturas" style="color:var(--purple)">0</div><div class="metric-sub">type 2</div></div>
+        <div class="metric"><div class="metric-lbl">Notas de crédito</div><div class="metric-val" id="m-nc" style="color:var(--amber)">0</div><div class="metric-sub">type 16</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Documentos recientes</div><div class="card-spacer"></div><button class="tb-btn" onclick="gotoView('docs')" style="font-size:11px">Ver todos →</button></div>
+          <div id="recent-docs">
+            <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sin documentos aún.<br>Emite tu primer documento →</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Acceso rápido</div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button onclick="quickDoc('37')" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r2);border:1px solid var(--border);background:var(--bg3);cursor:pointer;text-align:left;transition:all .14s;font-family:var(--font);" onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='var(--bg3)'">
+              <span style="font-size:22px">🧾</span>
+              <div><div style="font-size:13px;font-weight:600">Boleta electrónica</div><div style="font-size:11px;color:var(--text3)">Consumidor final · Sin datos receptor</div></div>
+              <span style="margin-left:auto;color:var(--text3);font-size:16px">›</span>
+            </button>
+            <button onclick="quickDoc('2')" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r2);border:1px solid var(--border);background:var(--bg3);cursor:pointer;text-align:left;transition:all .14s;font-family:var(--font);" onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='var(--bg3)'">
+              <span style="font-size:22px">📋</span>
+              <div><div style="font-size:13px;font-weight:600">Factura electrónica</div><div style="font-size:11px;color:var(--text3)">Empresa · Con datos del receptor</div></div>
+              <span style="margin-left:auto;color:var(--text3);font-size:16px">›</span>
+            </button>
+            <button onclick="quickDoc('16')" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r2);border:1px solid var(--border);background:var(--bg3);cursor:pointer;text-align:left;transition:all .14s;font-family:var(--font);" onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='var(--bg3)'">
+              <span style="font-size:22px">↩</span>
+              <div><div style="font-size:13px;font-weight:600">Nota de crédito</div><div style="font-size:11px;color:var(--text3)">Anulación o descuento post-venta</div></div>
+              <span style="margin-left:auto;color:var(--text3);font-size:16px">›</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ NUEVA FACTURA ════════════════════════════ -->
+    <div class="view" id="view-nueva">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">Nuevo documento</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Emite boletas, facturas o notas de crédito al SII vía Koywe</div>
+
+      <!-- Tipo de documento -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Tipo de documento</div></div>
+        <div class="doc-types" id="doc-type-selector">
+          <div class="dt-btn selected" data-type="37" onclick="selectDocType('37', this)">
+            <div class="dt-icon">🧾</div>
+            <div class="dt-name">Boleta electrónica</div>
+            <div class="dt-id">type: 37</div>
+          </div>
+          <div class="dt-btn" data-type="2" onclick="selectDocType('2', this)">
+            <div class="dt-icon">📋</div>
+            <div class="dt-name">Factura electrónica</div>
+            <div class="dt-id">type: 2</div>
+          </div>
+          <div class="dt-btn" data-type="16" onclick="selectDocType('16', this)">
+            <div class="dt-icon">↩</div>
+            <div class="dt-name">Nota de crédito</div>
+            <div class="dt-id">type: 16</div>
+          </div>
+          <div class="dt-btn" data-type="32" onclick="selectDocType('32', this)">
+            <div class="dt-icon">🔖</div>
+            <div class="dt-name">Boleta exenta</div>
+            <div class="dt-id">type: 41</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Receptor (condicional) -->
+      <div class="card" id="receptor-card" style="display:none">
+        <div class="card-hdr"><div><div class="card-title">Datos del receptor</div><div class="card-sub">Requerido para facturas y notas de crédito</div></div></div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">RUT receptor <span class="req">*</span></label><input class="fi mono" id="recv-rut" placeholder="76.399.932-7"></div>
+          <div class="fg"><label class="fl">Razón social <span class="req">*</span></label><input class="fi" id="recv-name" placeholder="Empresa Ejemplo SpA"></div>
+        </div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">Giro</label><input class="fi" id="recv-giro" placeholder="Comercio al por menor"></div>
+          <div class="fg"><label class="fl">Ciudad</label><input class="fi" id="recv-city" placeholder="Santiago"></div>
+        </div>
+        <div class="fg"><label class="fl">Dirección</label><input class="fi" id="recv-addr" placeholder="Av. Libertador 1234, Santiago"></div>
+      </div>
+
+      <!-- Referencia (para NC) -->
+      <div class="card" id="reference-card" style="display:none">
+        <div class="card-hdr"><div><div class="card-title">Referencia al documento original</div><div class="card-sub">Requerido para nota de crédito</div></div></div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">N° documento original</label><input class="fi mono" id="ref-num" placeholder="1234"></div>
+          <div class="fg"><label class="fl">Tipo documento original</label>
+            <select class="fs" id="ref-type">
+              <option value="37">Boleta (37)</option>
+              <option value="2">Factura (2)</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Motivo de la anulación</label><input class="fi" id="ref-reason" value="Anulacion" placeholder="Anulacion, Devolucion, etc."></div>
+      </div>
+
+      <!-- Detalle items -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Detalle de ítems</div></div>
+        <table class="items-table" id="items-table">
+          <thead><tr>
+            <th style="min-width:200px">Descripción</th>
+            <th style="width:60px">Cant.</th>
+            <th style="width:110px">Precio unit.</th>
+            <th style="width:90px">IVA 19%</th>
+            <th style="width:100px">Total línea</th>
+            <th style="width:30px"></th>
+          </tr></thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+        <button class="add-item-btn" onclick="addItem()">+ Agregar ítem</button>
+
+        <!-- Totals -->
+        <div class="fr fr2">
+          <div>
+            <div class="fg"><label class="fl">Observación (opcional)</label><textarea class="fta" id="obs" placeholder="Referencia de pedido, mesa, etc." rows="2"></textarea></div>
+          </div>
+          <div class="totals-box">
+            <div class="totals-row"><span class="lbl">Neto</span><span class="val" id="tot-net">$0</span></div>
+            <div class="totals-row" id="disc-row" style="display:none"><span class="lbl discount-row">Descuento</span><span class="val" id="tot-disc" style="color:var(--amber)">−$0</span></div>
+            <div class="totals-row"><span class="lbl">IVA (19%)</span><span class="val" id="tot-iva">$0</span></div>
+            <div class="totals-row total"><span class="lbl">TOTAL</span><span class="val" id="tot-total">$0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-secondary" onclick="resetForm()">Limpiar</button>
+        <button class="btn-preview" onclick="previewDoc()">👁 Vista previa</button>
+        <button class="btn-primary" id="emit-btn" onclick="emitirDocumento()">
+          🧾 Emitir al SII vía Koywe
+        </button>
+      </div>
+    </div>
+
+    <!-- ════ DOCUMENTOS ═══════════════════════════════ -->
+    <div class="view" id="view-docs">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">Documentos emitidos</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Historial de documentos emitidos en esta sesión</div>
+
+      <div class="card" id="docs-container">
+        <div style="text-align:center;padding:30px;color:var(--text3)">No hay documentos emitidos aún. <button onclick="gotoView('nueva')" style="color:var(--accent);background:none;border:none;cursor:pointer;font-size:13px">Emite el primero →</button></div>
+      </div>
+    </div>
+
+    <!-- ════ API TESTER ═══════════════════════════════ -->
+    <div class="view" id="view-api">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">API Tester</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Prueba cualquier endpoint de Koywe directamente desde aquí</div>
+
+      <div class="hl hl-amber">⚠ Las llamadas se hacen <strong>desde tu browser</strong> directamente a api-billing.koywe.com. Asegúrate de que el servidor Koywe permita CORS desde tu dominio en producción.</div>
+
+      <!-- Quick calls -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="tb-btn" onclick="loadQuickCall('auth')">🔑 Auth token</button>
+        <button class="tb-btn" onclick="loadQuickCall('boleta')">🧾 Crear boleta</button>
+        <button class="tb-btn" onclick="loadQuickCall('factura')">📋 Crear factura</button>
+        <button class="tb-btn" onclick="loadQuickCall('nc')">↩ Nota crédito</button>
+        <button class="tb-btn" onclick="loadQuickCall('getDocs')">📄 Listar documentos</button>
+      </div>
+
+      <div class="api-panel">
+        <div class="api-col">
+          <div class="api-col-title">Request</div>
+          <div class="api-method-bar">
+            <select class="fs" id="api-method" style="width:90px;padding:7px 24px 7px 8px;font-family:var(--mono);font-size:12px">
+              <option>POST</option><option>GET</option><option>PATCH</option><option>DELETE</option>
+            </select>
+            <input class="endpoint-input" id="api-endpoint" value="/koywe-proxy/V1/auth">
+            <button class="run-btn" onclick="runApiCall()">▶ Ejecutar</button>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:-4px">Headers: Content-Type y Authorization se agregan automáticamente</div>
+          <div contenteditable="true" class="code-area editable" id="api-body" style="flex:1">{
+  "grant_type": "password",
+  "client_id": "demo/001",
+  "client_secret": "ad258748356c5104df2bf4bdbabd3352",
+  "username": "1.111.111-1/demoapi",
+  "password": "76be37bcc4970d29e519fca46edead19"
+}</div>
+        </div>
+        <div class="api-col">
+          <div class="api-col-title" style="display:flex;align-items:center;gap:8px">
+            Response
+            <span id="api-status-badge"></span>
+            <span id="api-time" style="font-size:10px;color:var(--text3);font-family:var(--mono)"></span>
+          </div>
+          <div class="code-area" id="api-response" style="flex:1;color:var(--text3)">// La respuesta aparecerá aquí</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ CONFIG ═══════════════════════════════════ -->
+    <div class="view" id="view-config">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">Configuración</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Credenciales y parámetros de conexión con Koywe</div>
+
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-title">Conexión Koywe Billing API</div><div class="card-sub">Actualmente en modo Sandbox</div></div><div class="card-spacer"></div><span class="badge badge-warn">SANDBOX</span></div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">Client ID</label><input class="fi mono" id="cfg-client-id" value="demo/001"></div>
+          <div class="fg"><label class="fl">Client Secret</label><input class="fi mono" id="cfg-client-secret" value="ad258748356c5104df2bf4bdbabd3352" type="password"></div>
+        </div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">Username</label><input class="fi mono" id="cfg-username" value="1.111.111-1/demoapi"></div>
+          <div class="fg"><label class="fl">Password</label><input class="fi mono" id="cfg-password" value="76be37bcc4970d29e519fca46edead19" type="password"></div>
+        </div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">Account ID</label><input class="fi mono" id="cfg-account-id" value="423"></div>
+          <div class="fg"><label class="fl">Ambiente</label>
+            <select class="fs" id="cfg-env">
+              <option value="sandbox" selected>Sandbox (pruebas)</option>
+              <option value="production">Producción</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-primary" style="max-width:200px" onclick="testConnection()">🔌 Probar conexión</button>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-title">Datos del emisor</div><div class="card-sub">Información del negocio para los DTE</div></div></div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">RUT emisor</label><input class="fi mono" id="cfg-rut" value="76399932-7"></div>
+          <div class="fg"><label class="fl">Razón social</label><input class="fi" id="cfg-razon" value="Empresa Demo Chile SpA"></div>
+        </div>
+        <div class="fr fr2">
+          <div class="fg"><label class="fl">Giro</label><input class="fi" id="cfg-giro" value="Comidas rápidas y bebidas"></div>
+          <div class="fg"><label class="fl">Ciudad</label><input class="fi" id="cfg-city" value="Santiago"></div>
+        </div>
+        <div class="fg"><label class="fl">Dirección</label><input class="fi" id="cfg-addr" value="Av. Libertador 1234, Santiago Centro"></div>
+        <div style="margin-top:12px">
+          <button class="btn-primary" style="max-width:200px" onclick="saveConfig()">Guardar configuración</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-title">Token actual</div><div class="card-sub">Se renueva automáticamente cada 55 min</div></div><div class="card-spacer"></div><button class="tb-btn" onclick="refreshToken()">↺ Renovar</button></div>
+        <div class="fg"><label class="fl">Access token</label><div class="fi mono" id="cfg-token" style="min-height:50px;padding:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3)">No autenticado aún</div></div>
+        <div id="token-info" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- MODAL -->
+<div id="modal-bg" onclick="closeModal()">
+  <div id="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-title">Documento</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div id="notif"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+var STATE = {
+  token: null,
+  tokenExpires: 0,
+  currentDocType: '37',
+  items: [],
+  docs: [],
+  stats: { total:0, boletas:0, facturas:0, nc:0 },
+  config: {
+    clientId: 'demo/001',
+    clientSecret: 'ad258748356c5104df2bf4bdbabd3352',
+    username: '1.111.111-1/demoapi',
+    password: '76be37bcc4970d29e519fca46edead19',
+    accountId: 423,
+    rut: '76399932-7',
+    razon: 'Empresa Demo Chile SpA',
+    giro: 'Comidas rápidas y bebidas',
+    city: 'Santiago',
+    addr: 'Av. Libertador 1234, Santiago Centro',
+  }
+};
+
+// Proxy local (servidor.py) — resuelve CORS automáticamente
+// En producción cambiar a tu API backend: '/api/v1/koywe'
+var BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? '/koywe-proxy/V1'
+  : 'https://api-billing.koywe.com/V1';
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function() {
+  addItem();
+  authenticate();
+});
+
+// ════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════
+async function authenticate() {
+  setConnStatus('connecting', 'Conectando con Koywe…');
+  try {
+    var resp = await fetch(BASE_URL + '/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': '*/*' },
+      body: JSON.stringify({
+        grant_type: 'password',
+        client_id: STATE.config.clientId,
+        client_secret: STATE.config.clientSecret,
+        username: STATE.config.username,
+        password: STATE.config.password,
+      })
+    });
+    var data = await resp.json();
+    if (data.access_token) {
+      STATE.token = data.access_token;
+      STATE.tokenExpires = Date.now() + 55 * 60 * 1000;
+      setConnStatus('connected', 'Conectado · Koywe Sandbox');
+      document.getElementById('cfg-token').textContent = STATE.token;
+      document.getElementById('token-info').textContent = 'Expira en 55 min · ' + new Date().toLocaleTimeString('es-CL');
+      notify('✅ Conectado con Koywe Sandbox', 'success');
+    } else {
+      throw new Error(data.error || 'No se recibió access_token');
+    }
+  } catch(e) {
+    setConnStatus('error', 'Error de conexión');
+    notify('❌ Error al conectar: ' + e.message, 'error');
+  }
+}
+
+async function getToken() {
+  if (STATE.token && Date.now() < STATE.tokenExpires) return STATE.token;
+  await authenticate();
+  return STATE.token;
+}
+
+async function refreshToken() {
+  STATE.token = null;
+  await authenticate();
+}
+
+function setConnStatus(state, label) {
+  var dot = document.getElementById('conn-dot');
+  var lbl = document.getElementById('conn-label');
+  dot.className = 'conn-dot ' + state;
+  lbl.textContent = label;
+}
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function gotoView(v) {
+  document.querySelectorAll('.view').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(el){ el.classList.remove('active'); });
+  var el = document.getElementById('view-' + v);
+  var nb = document.getElementById('nb-' + v);
+  if (el) el.classList.add('active');
+  if (nb) nb.classList.add('active');
+}
+
+function quickDoc(type) {
+  selectDocType(type, document.querySelector('[data-type="' + type + '"]'));
+  gotoView('nueva');
+}
+
+// ════════════════════════════════════════════════════
+// DOC TYPE
+// ════════════════════════════════════════════════════
+function selectDocType(type, el) {
+  STATE.currentDocType = type;
+  document.querySelectorAll('.dt-btn').forEach(function(b){ b.classList.remove('selected'); });
+  if (el) el.classList.add('selected');
+  var recvCard = document.getElementById('receptor-card');
+  var refCard  = document.getElementById('reference-card');
+  recvCard.style.display = (type === '2' || type === '16') ? 'block' : 'none';
+  refCard.style.display  = (type === '16') ? 'block' : 'none';
+}
+
+// ════════════════════════════════════════════════════
+// ITEMS
+// ════════════════════════════════════════════════════
+var itemIdCounter = 0;
+
+function addItem(desc, qty, price) {
+  var id = ++itemIdCounter;
+  STATE.items.push({ id: id, desc: desc||'', qty: qty||1, price: price||0 });
+  renderItems();
+}
+
+function removeItem(id) {
+  STATE.items = STATE.items.filter(function(i){ return i.id !== id; });
+  renderItems();
+  calcTotals();
+}
+
+function renderItems() {
+  var tbody = document.getElementById('items-tbody');
+  var html = '';
+  for (var i=0; i<STATE.items.length; i++) {
+    var item = STATE.items[i];
+    var id = item.id;
+    html += '<tr>';
+    html += '<td><input class="fi" placeholder="Descripción del producto/servicio" value="' + escHtml(item.desc) + '" oninput="updateItem(' + id + ',\'desc\',this.value)" style="min-width:180px"></td>';
+    html += '<td><input class="fi mono" type="number" min="1" value="' + item.qty + '" oninput="updateItem(' + id + ',\'qty\',+this.value)" style="width:60px;text-align:center"></td>';
+    html += '<td><input class="fi mono" type="number" min="0" value="' + item.price + '" oninput="updateItem(' + id + ',\'price\',+this.value)" style="width:100px;text-align:right" placeholder="0"></td>';
+    var iva = calcItemIVA(item);
+    var total = calcItemTotal(item);
+    html += '<td style="font-family:var(--mono);font-size:12px;text-align:right;color:var(--text2)">' + fmt(iva) + '</td>';
+    html += '<td style="font-family:var(--mono);font-size:12px;text-align:right;font-weight:600">' + fmt(total) + '</td>';
+    html += '<td>' + (STATE.items.length > 1 ? '<button class="del-btn" onclick="removeItem(' + id + ')">✕</button>' : '') + '</td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function updateItem(id, field, val) {
+  var item = STATE.items.find(function(i){ return i.id === id; });
+  if (item) { item[field] = val; }
+  renderItems();
+  calcTotals();
+}
+
+function calcItemIVA(item) {
+  if (STATE.currentDocType === '32' || STATE.currentDocType === '41') return 0;
+  var bruto = Math.round(item.price * item.qty);
+  var neto  = Math.round(bruto / 1.19);
+  return bruto - neto;
+}
+
+function calcItemTotal(item) {
+  return Math.round(item.price * item.qty);
+}
+
+function calcTotals() {
+  var grandTotal = STATE.items.reduce(function(s,i){ return s + calcItemTotal(i); }, 0);
+  var exempt     = (STATE.currentDocType === '32' || STATE.currentDocType === '41');
+  var neto       = exempt ? grandTotal : Math.round(grandTotal / 1.19);
+  var iva        = exempt ? 0 : grandTotal - neto;
+
+  document.getElementById('tot-net').textContent   = fmt(neto);
+  document.getElementById('tot-iva').textContent   = fmt(iva);
+  document.getElementById('tot-total').textContent = fmt(grandTotal);
+
+  var btn = document.getElementById('emit-btn');
+  if (btn) btn.disabled = grandTotal === 0;
+  document.getElementById('cobrar-label') && (document.getElementById('cobrar-label').textContent = 'Emitir ' + fmt(grandTotal));
+}
+
+// ════════════════════════════════════════════════════
+// EMIT DOCUMENTO
+// ════════════════════════════════════════════════════
+async function emitirDocumento() {
+  var token = await getToken();
+  if (!token) { notify('Sin token de autenticación', 'error'); return; }
+
+  var total = STATE.items.reduce(function(s,i){ return s + calcItemTotal(i); }, 0);
+  if (!total) { notify('Agrega al menos un ítem con precio', 'error'); return; }
+
+  var exempt = (STATE.currentDocType === '32' || STATE.currentDocType === '41');
+  var neto   = exempt ? total : Math.round(total / 1.19);
+  var iva    = exempt ? 0 : total - neto;
+
+  // Build details
+  var details = STATE.items.filter(function(i){ return i.price > 0 && i.desc; }).map(function(i) {
+    var bruto  = Math.round(i.price * i.qty);
+    var netLine= exempt ? bruto : Math.round(bruto / 1.19);
+    var ivaLine= bruto - netLine;
+    var d = {
+      quantity: i.qty,
+      line_description: i.desc || 'Producto',
+      unit_measure: 'UN',
+      unit_price: i.price,
+      total_amount_line: bruto,
+      total_taxes: exempt ? 0 : ivaLine,
+    };
+    if (!exempt) {
+      d.taxes = [{ tax_type_id: '387', tax_percentage: 19, tax_amount: ivaLine }];
+    }
+    return d;
+  });
+
+  if (!details.length) { notify('Completa la descripción y precio de los ítems', 'error'); return; }
+
+  var body = {
+    header: {
+      account_id: STATE.config.accountId,
+      document_type_id: STATE.currentDocType,
+      received_issued_flag: 1,
+      issue_date: new Date().toISOString().slice(0,10),
+      issuer_tax_id_code: STATE.config.rut,
+      issuer_tax_id_type: 'CL-RUT',
+      issuer_legal_name: STATE.config.razon,
+      issuer_address: STATE.config.addr,
+      issuer_district: 'Santiago',
+      issuer_city: STATE.config.city,
+      issuer_country_id: '253',
+      issuer_activity: STATE.config.giro,
+      payment_conditions: '0',
+      currency_id: 39,
+    },
+    details: details,
+    totals: { net_amount: neto, taxes_amount: iva, total_amount: total },
+  };
+
+  // Add receiver for facturas
+  if (STATE.currentDocType === '2' || STATE.currentDocType === '16') {
+    var rut  = document.getElementById('recv-rut').value.trim();
+    var name = document.getElementById('recv-name').value.trim();
+    if (!rut || !name) { notify('Completa RUT y razón social del receptor', 'error'); return; }
+    body.header.receiver_tax_id_code  = rut;
+    body.header.receiver_tax_id_type  = 'CL-RUT';
+    body.header.receiver_legal_name   = name;
+    body.header.receiver_address      = document.getElementById('recv-addr').value || '';
+    body.header.receiver_city         = document.getElementById('recv-city').value || 'Santiago';
+    body.header.receiver_country_id   = '253';
+    body.header.receiver_activity     = document.getElementById('recv-giro').value || '';
+  }
+
+  // Add reference for NC
+  if (STATE.currentDocType === '16') {
+    var refNum  = document.getElementById('ref-num').value.trim();
+    var refType = document.getElementById('ref-type').value;
+    var reason  = document.getElementById('ref-reason').value || 'Anulacion';
+    if (refNum) {
+      body.references = [{
+        document_type_id: parseInt(refType),
+        reference_number: refNum,
+        reference_code: 1,
+        description: reason,
+        reference_date: new Date().toISOString().slice(0,10),
+      }];
+    } else {
+      body.header.receiver_tax_id_code = body.header.receiver_tax_id_code || '66666666-6';
+      body.header.receiver_tax_id_type = 'CL-RUT';
+      body.header.receiver_legal_name  = body.header.receiver_legal_name || 'SIN NOMBRE';
+    }
+  }
+
+  var btn = document.getElementById('emit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Emitiendo…';
+
+  var t0 = Date.now();
+  try {
+    var resp = await fetch(BASE_URL + '/documents', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Authorization': 'Bearer ' + token,
+      },
+      body: JSON.stringify(body),
+    });
+    var data = await resp.json();
+    var elapsed = ((Date.now() - t0) / 1000).toFixed(2) + 's';
+
+    if (data.result && data.result.status === 1) {
+      throw new Error(data.result.error_message || 'Error en el documento');
+    }
+
+    // SUCCESS
+    var docNum = data.header ? (data.header.document_number || data.document_id) : data.document_id;
+    var docRec = {
+      id: data.document_id,
+      number: docNum,
+      type: STATE.currentDocType,
+      total: total,
+      date: new Date().toLocaleDateString('es-CL'),
+      status: data.result && data.result.status === 0 ? 'ok' : 'pending',
+      rawData: data,
+      elapsed: elapsed,
+    };
+    STATE.docs.unshift(docRec);
+    updateStats();
+    renderDocsList();
+    notify('✅ DTE emitido · N° ' + docNum + ' · ' + elapsed, 'success');
+    showDocResult(docRec, data);
+    resetForm();
+
+  } catch(e) {
+    notify('❌ Error: ' + e.message, 'error');
+    showApiError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🧾 Emitir al SII vía Koywe';
+  }
+}
+
+function showDocResult(docRec, data) {
+  var typeLabels = {'37':'Boleta electrónica','2':'Factura electrónica','16':'Nota de crédito','32':'Factura exenta','41':'Boleta exenta'};
+  var html = '<div style="text-align:center;padding:16px 0 20px">';
+  html += '<div style="font-size:48px;margin-bottom:8px">' + (docRec.status==='ok'?'✅':'⏳') + '</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:var(--green)">Documento emitido</div>';
+  html += '<div style="font-size:13px;color:var(--text3);margin-top:4px">' + typeLabels[docRec.type] + '</div>';
+  html += '</div>';
+  html += '<div style="background:var(--bg3);border-radius:var(--r2);padding:16px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px">';
+  html += dRow('N° documento', docRec.number || '—');
+  html += dRow('Document ID', data.document_id);
+  html += dRow('Estado', data.result && data.result.status===0 ? '✅ Enviado al SII' : '⏳ Pendiente validación');
+  html += dRow('Total', fmt(docRec.total));
+  html += dRow('Fecha emisión', docRec.date);
+  html += dRow('Tiempo respuesta', docRec.elapsed);
+  html += '</div>';
+  if (data.electronic_document && data.electronic_document.document_pdf) {
+    html += '<button onclick="downloadPDF(\'' + data.electronic_document.document_pdf + '\')" class="btn-primary" style="margin-bottom:8px">⬇ Descargar PDF del DTE</button>';
+  }
+  if (data.result && data.result.error_message) {
+    html += '<div class="hl hl-amber">Mensaje SII: ' + data.result.error_message + '</div>';
+  }
+  html += '<div style="background:var(--bg3);border-radius:var(--r2);padding:10px;margin-top:8px">';
+  html += '<div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:700">RESPUESTA COMPLETA DE KOYWE:</div>';
+  html += '<pre style="font-family:var(--mono);font-size:10px;color:var(--text2);white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto">' + JSON.stringify(data, null, 2).substring(0, 2000) + '</pre>';
+  html += '</div>';
+
+  document.getElementById('modal-title').textContent = 'DTE Emitido · N° ' + (docRec.number || docRec.id);
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function dRow(label, val) {
+  return '<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">' + label + '</span><span style="font-family:var(--mono);font-weight:500">' + escHtml(String(val)) + '</span></div>';
+}
+
+function downloadPDF(b64) {
+  try {
+    var bin = atob(b64);
+    var arr = new Uint8Array(bin.length);
+    for (var i=0; i<bin.length; i++) arr[i] = bin.charCodeAt(i);
+    var blob = new Blob([arr], {type:'application/pdf'});
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = 'DTE.pdf'; a.click();
+    URL.revokeObjectURL(url);
+    notify('PDF descargado', 'success');
+  } catch(e) {
+    notify('Error al descargar PDF: ' + e.message, 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════
+// DOCS LIST
+// ════════════════════════════════════════════════════
+var typeNames = {'37':'Boleta','2':'Factura','16':'Nota Cred.','32':'B.Exenta','41':'B.Exenta'};
+var typeChips = {'37':'chip-boleta','2':'chip-factura','16':'chip-nc','32':'chip-nc','41':'chip-nc'};
+
+function updateStats() {
+  STATE.stats.total    = STATE.docs.length;
+  STATE.stats.boletas  = STATE.docs.filter(function(d){ return d.type==='37'||d.type==='41'; }).length;
+  STATE.stats.facturas = STATE.docs.filter(function(d){ return d.type==='2'||d.type==='32'; }).length;
+  STATE.stats.nc       = STATE.docs.filter(function(d){ return d.type==='16'; }).length;
+  document.getElementById('m-total').textContent   = STATE.stats.total;
+  document.getElementById('m-boletas').textContent = STATE.stats.boletas;
+  document.getElementById('m-facturas').textContent= STATE.stats.facturas;
+  document.getElementById('m-nc').textContent      = STATE.stats.nc;
+}
+
+function renderDocsList() {
+  var container = document.getElementById('docs-container');
+  var recentEl  = document.getElementById('recent-docs');
+  if (!STATE.docs.length) {
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)">Sin documentos aún.</div>';
+    return;
+  }
+  var html = '<table class="doc-tbl"><thead><tr><th>N° Doc</th><th>Tipo</th><th>Total</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>';
+  STATE.docs.forEach(function(d) {
+    html += '<tr onclick="viewDoc(' + JSON.stringify(d).replace(/"/g,'&quot;') + ')">';
+    html += '<td class="mono" style="color:var(--accent)">' + (d.number || d.id || '—') + '</td>';
+    html += '<td><span class="doc-type-chip ' + (typeChips[d.type]||'chip-boleta') + '">' + (typeNames[d.type]||d.type) + '</span></td>';
+    html += '<td class="mono" style="font-weight:600">' + fmt(d.total) + '</td>';
+    html += '<td style="color:var(--text3)">' + d.date + '</td>';
+    html += '<td><span class="doc-status-dot ' + (d.status==='ok'?'dsd-ok':'dsd-pend') + '"></span>' + (d.status==='ok'?'Emitido':'Pendiente') + '</td>';
+    html += '<td><button class="tb-btn" onclick="event.stopPropagation();viewDoc(' + JSON.stringify(d).replace(/"/g,'&quot;') + ')" style="font-size:11px">Ver →</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+
+  // Recent (first 3)
+  var rHtml = '<div style="display:flex;flex-direction:column;gap:5px">';
+  STATE.docs.slice(0,3).forEach(function(d) {
+    rHtml += '<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">';
+    rHtml += '<span class="doc-type-chip ' + (typeChips[d.type]||'chip-boleta') + '" style="flex-shrink:0">' + (typeNames[d.type]||d.type) + '</span>';
+    rHtml += '<span style="font-family:var(--mono);font-size:12px;color:var(--accent)">' + (d.number||d.id||'—') + '</span>';
+    rHtml += '<span style="margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:600">' + fmt(d.total) + '</span>';
+    rHtml += '</div>';
+  });
+  rHtml += '</div>';
+  if (recentEl) recentEl.innerHTML = rHtml;
+}
+
+function viewDoc(d) {
+  if (typeof d === 'string') d = JSON.parse(d.replace(/&quot;/g,'"'));
+  showDocResult(d, d.rawData || {});
+}
+
+// ════════════════════════════════════════════════════
+// PREVIEW
+// ════════════════════════════════════════════════════
+function previewDoc() {
+  var total   = STATE.items.reduce(function(s,i){ return s + calcItemTotal(i); }, 0);
+  var exempt  = (STATE.currentDocType === '32' || STATE.currentDocType === '41');
+  var neto    = exempt ? total : Math.round(total / 1.19);
+  var iva     = exempt ? 0 : total - neto;
+  var typeL   = {'37':'Boleta Electrónica','2':'Factura Electrónica','16':'Nota de Crédito','32':'Factura Exenta','41':'Boleta Exenta'};
+
+  var html = '<div style="background:#fff;color:#000;font-family:var(--mono);font-size:12px;border:1px dashed #ccc;border-radius:var(--r2);padding:20px;max-width:300px;margin:0 auto;line-height:1.9">';
+  html += '<div style="text-align:center;font-weight:700">' + escHtml(STATE.config.razon) + '</div>';
+  html += '<div style="text-align:center;font-size:10px">RUT: ' + STATE.config.rut + '</div>';
+  html += '<div style="text-align:center;font-size:10px">' + escHtml(STATE.config.addr) + '</div>';
+  html += '<div style="border-top:1px dashed #ccc;margin:8px 0"></div>';
+  html += '<div style="text-align:center;font-weight:700;font-size:13px">' + (typeL[STATE.currentDocType]||STATE.currentDocType) + '</div>';
+  html += '<div style="text-align:center;font-size:10px;color:#666">[Sandbox · N° pendiente]</div>';
+  html += '<div style="border-top:1px dashed #ccc;margin:8px 0"></div>';
+  STATE.items.forEach(function(i){
+    if (!i.desc || !i.price) return;
+    html += '<div style="display:flex;justify-content:space-between"><span>' + escHtml(i.desc) + ' x' + i.qty + '</span><span>' + fmt(i.price*i.qty) + '</span></div>';
+  });
+  html += '<div style="border-top:1px dashed #ccc;margin:8px 0"></div>';
+  html += '<div style="display:flex;justify-content:space-between"><span>Neto</span><span>' + fmt(neto) + '</span></div>';
+  if (!exempt) html += '<div style="display:flex;justify-content:space-between"><span>IVA 19%</span><span>' + fmt(iva) + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-weight:700"><span>TOTAL</span><span>' + fmt(total) + '</span></div>';
+  html += '<div style="border-top:1px dashed #ccc;margin:8px 0"></div>';
+  html += '<div style="text-align:center;font-size:10px">Vista previa · Sandbox Koywe</div>';
+  html += '</div>';
+
+  document.getElementById('modal-title').textContent = 'Vista previa del documento';
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════
+// API TESTER
+// ════════════════════════════════════════════════════
+var quickCalls = {
+  auth: {
+    method:'POST', endpoint: '/koywe-proxy/V1/auth',
+    body:'{\n  "grant_type": "password",\n  "client_id": "demo/001",\n  "client_secret": "ad258748356c5104df2bf4bdbabd3352",\n  "username": "1.111.111-1/demoapi",\n  "password": "76be37bcc4970d29e519fca46edead19"\n}'
+  },
+  boleta: {
+    method:'POST', endpoint: '/koywe-proxy/V1/documents',
+    body:'{\n  "header": {\n    "account_id": 423,\n    "document_type_id": "37",\n    "received_issued_flag": 1,\n    "issue_date": "' + new Date().toISOString().slice(0,10) + '",\n    "issuer_tax_id_code": "76399932-7",\n    "issuer_tax_id_type": "CL-RUT",\n    "issuer_legal_name": "Empresa Demo Chile SpA",\n    "issuer_address": "Av. Libertador 1234",\n    "issuer_city": "Santiago",\n    "issuer_country_id": "253",\n    "issuer_activity": "Comidas rapidas",\n    "currency_id": 39\n  },\n  "details": [{\n    "quantity": 1,\n    "line_description": "Hamburguesa Clasica",\n    "unit_measure": "UN",\n    "unit_price": 4500,\n    "total_taxes": 719,\n    "total_amount_line": 4500,\n    "taxes": [{"tax_type_id": "387", "tax_percentage": 19, "tax_amount": 719}]\n  }],\n  "totals": {\n    "net_amount": 3781,\n    "taxes_amount": 719,\n    "total_amount": 4500\n  }\n}'
+  },
+  factura: {
+    method:'POST', endpoint: '/koywe-proxy/V1/documents',
+    body:'{\n  "header": {\n    "account_id": 423,\n    "document_type_id": "2",\n    "received_issued_flag": 1,\n    "issue_date": "' + new Date().toISOString().slice(0,10) + '",\n    "issuer_tax_id_code": "76399932-7",\n    "issuer_tax_id_type": "CL-RUT",\n    "issuer_legal_name": "Empresa Demo Chile SpA",\n    "issuer_city": "Santiago",\n    "issuer_country_id": "253",\n    "issuer_activity": "Comidas rapidas",\n    "receiver_tax_id_code": "76399932-7",\n    "receiver_tax_id_type": "CL-RUT",\n    "receiver_legal_name": "Cliente Empresa SpA",\n    "receiver_city": "Santiago",\n    "receiver_country_id": "253",\n    "currency_id": 39\n  },\n  "details": [{\n    "quantity": 2,\n    "line_description": "Servicio de catering",\n    "unit_measure": "UN",\n    "unit_price": 50000,\n    "total_taxes": 15966,\n    "total_amount_line": 100000,\n    "taxes": [{"tax_type_id": "387", "tax_percentage": 19, "tax_amount": 15966}]\n  }],\n  "totals": {\n    "net_amount": 84034,\n    "taxes_amount": 15966,\n    "total_amount": 100000\n  }\n}'
+  },
+  nc: {
+    method:'POST', endpoint: '/koywe-proxy/V1/documents',
+    body:'{\n  "header": {\n    "account_id": 423,\n    "document_type_id": "16",\n    "received_issued_flag": 1,\n    "issue_date": "' + new Date().toISOString().slice(0,10) + '",\n    "issuer_tax_id_code": "76399932-7",\n    "issuer_tax_id_type": "CL-RUT",\n    "issuer_legal_name": "Empresa Demo Chile SpA",\n    "issuer_city": "Santiago",\n    "issuer_country_id": "253",\n    "receiver_tax_id_code": "66666666-6",\n    "receiver_tax_id_type": "CL-RUT",\n    "receiver_legal_name": "SIN NOMBRE",\n    "receiver_country_id": "253",\n    "currency_id": 39\n  },\n  "details": [{\n    "quantity": 1,\n    "line_description": "Anulacion de venta",\n    "unit_measure": "UN",\n    "unit_price": 4500,\n    "total_taxes": 719,\n    "total_amount_line": 4500,\n    "taxes": [{"tax_type_id": "387", "tax_percentage": 19, "tax_amount": 719}]\n  }],\n  "references": [{\n    "document_type_id": 37,\n    "reference_number": "999",\n    "reference_code": 1,\n    "description": "Anulacion",\n    "reference_date": "' + new Date().toISOString().slice(0,10) + '"\n  }],\n  "totals": {\n    "net_amount": 3781,\n    "taxes_amount": 719,\n    "total_amount": 4500\n  }\n}'
+  },
+  getDocs: {
+    method:'GET', endpoint: '/koywe-proxy/V1/documents?account_id=423',
+    body:''
+  }
+};
+
+function loadQuickCall(key) {
+  var qc = quickCalls[key];
+  if (!qc) return;
+  document.getElementById('api-method').value   = qc.method;
+  document.getElementById('api-endpoint').value = qc.endpoint;
+  document.getElementById('api-body').textContent = qc.body;
+}
+
+async function runApiCall() {
+  var method   = document.getElementById('api-method').value;
+  var endpoint = document.getElementById('api-endpoint').value;
+  var bodyText = document.getElementById('api-body').textContent.trim();
+  var resEl    = document.getElementById('api-response');
+  var statusEl = document.getElementById('api-status-badge');
+  var timeEl   = document.getElementById('api-time');
+
+  resEl.textContent = '// Ejecutando…';
+  resEl.style.color = 'var(--text3)';
+  statusEl.innerHTML = '';
+
+  var token = STATE.token;
+  var headers = { 'Content-Type': 'application/json', 'Accept': '*/*' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+
+  var t0 = Date.now();
+  try {
+    var opts = { method: method, headers: headers };
+    if (method !== 'GET' && bodyText) opts.body = bodyText;
+    var resp = await fetch(endpoint, opts);
+    var elapsed = Date.now() - t0;
+    var text = await resp.text();
+    var data;
+    try { data = JSON.parse(text); text = JSON.stringify(data, null, 2); } catch(e) {}
+
+    // Cache token if this was an auth call
+    if (data && data.access_token) {
+      STATE.token = data.access_token;
+      STATE.tokenExpires = Date.now() + 55 * 60 * 1000;
+      setConnStatus('connected', 'Conectado · Token renovado');
+      document.getElementById('cfg-token').textContent = STATE.token;
+    }
+
+    resEl.textContent = text;
+    resEl.style.color = resp.ok ? '#22c97a' : '#f04f4f';
+    timeEl.textContent = elapsed + 'ms';
+    var ok = resp.ok;
+    statusEl.innerHTML = '<span class="badge ' + (ok?'badge-ok':'badge-err') + '">' + resp.status + ' ' + (ok?'OK':'Error') + '</span>';
+  } catch(e) {
+    var elapsed2 = Date.now() - t0;
+    resEl.textContent = '// Error: ' + e.message + '\n// Tiempo: ' + elapsed2 + 'ms\n// Posible causa: CORS (el servidor no permite llamadas desde este origen)';
+    resEl.style.color = '#f04f4f';
+    timeEl.textContent = elapsed2 + 'ms';
+    statusEl.innerHTML = '<span class="badge badge-err">CORS / Network Error</span>';
+  }
+}
+
+// ════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════
+async function testConnection() {
+  notify('🔄 Probando conexión…', 'info');
+  STATE.config.clientId     = document.getElementById('cfg-client-id').value;
+  STATE.config.clientSecret = document.getElementById('cfg-client-secret').value;
+  STATE.config.username     = document.getElementById('cfg-username').value;
+  STATE.config.password     = document.getElementById('cfg-password').value;
+  STATE.config.accountId    = parseInt(document.getElementById('cfg-account-id').value);
+  STATE.token = null;
+  await authenticate();
+}
+
+function saveConfig() {
+  STATE.config.rut   = document.getElementById('cfg-rut').value;
+  STATE.config.razon = document.getElementById('cfg-razon').value;
+  STATE.config.giro  = document.getElementById('cfg-giro').value;
+  STATE.config.city  = document.getElementById('cfg-city').value;
+  STATE.config.addr  = document.getElementById('cfg-addr').value;
+  document.getElementById('top-rut').textContent = STATE.config.rut;
+  notify('✅ Configuración guardada', 'success');
+}
+
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
+function resetForm() {
+  STATE.items = [];
+  itemIdCounter = 0;
+  addItem();
+  selectDocType('37', document.querySelector('[data-type="37"]'));
+  document.getElementById('recv-rut').value  = '';
+  document.getElementById('recv-name').value = '';
+  document.getElementById('recv-addr').value = '';
+  document.getElementById('recv-city').value = '';
+  document.getElementById('recv-giro').value = '';
+  document.getElementById('ref-num').value   = '';
+  document.getElementById('obs').value       = '';
+  calcTotals();
+}
+
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+
+function showApiError(msg) {
+  document.getElementById('modal-title').textContent = '❌ Error API';
+  document.getElementById('modal-body').innerHTML = '<div class="hl hl-amber">' + escHtml(msg) + '</div>';
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmt(n) { return '$' + Math.round(n||0).toLocaleString('es-CL'); }
+
+var notifId = 0;
+function notify(msg, type) {
+  var id = ++notifId;
+  var container = document.getElementById('notif');
+  var el = document.createElement('div');
+  el.className = 'notif-item ni-' + (type||'info');
+  el.innerHTML = '<span>' + msg + '</span><button class="notif-close" onclick="this.parentElement.remove()">×</button>';
+  el.id = 'n-' + id;
+  container.appendChild(el);
+  setTimeout(function(){ el.classList.add('show'); }, 50);
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 4000);
+}
+</script>
+</body>
+</html>

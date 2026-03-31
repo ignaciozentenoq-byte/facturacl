@@ -211,3 +211,14 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 /* ── SPINNER ──────────────────────────────────── */
 .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spinA .7s linear infinite; }
 @keyframes spinA { to{transform:rotate(360deg)} }
+
+/* ── API TESTER ───────────────────────────────── */
+.api-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.api-col   { display: flex; flex-direction: column; gap: 8px; }
+.api-col-title { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+.api-method-bar { display: flex; gap: 8px; align-items: center; }
+.run-btn { padding: 8px 16px; border-radius: var(--r); border: none; background: var(--green); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .14s; }
+.run-btn:hover { background: #047857; }
+.code-area { flex: 1; background: #0f1117; border: 1px solid #1e2230; border-radius: var(--r2); padding: 14px; font-family: var(--mono); font-size: 11px; color: #e2e8f0; overflow: auto; white-space: pre; line-height: 1.7; min-height: 300px; }
+.fi.mono { font-family: var(--mono); }
+.fta.mono { font-family: var(--mono); }
