@@ -1,11 +1,11 @@
 // src/main.js
-import { fetchToken }      from './api/koywe.js';
-import { Dashboard }       from './components/Dashboard.js';
-import { DocumentForm }    from './components/DocumentForm.js';
-import { DocsList }        from './components/DocsList.js';
-import { ApiTester }       from './components/ApiTester.js';
-import { initModal }       from './components/modal.js';
-import { notify }          from './components/notify.js';
+import { fetchToken }         from './api/koywe.js';
+import { Dashboard }          from './components/Dashboard.js';
+import { DocumentForm }       from './components/DocumentForm.js';
+import { DocsList }           from './components/DocsList.js';
+import { ApiTester }          from './components/ApiTester.js';
+import { initModal }          from './components/modal.js';
+import { notify }             from './components/notify.js';
 import { setState, getState } from './lib/state.js';
 
 let _dashboard = null;
@@ -32,18 +32,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     { onNewDoc: (type) => { _docForm?.selectType(type); gotoView('nueva'); } }
   );
 
-  _docForm = new DocumentForm(document.getElementById('view-nueva'));
-  _docsList = new DocsList(document.getElementById('view-docs'));
+  _docForm   = new DocumentForm(document.getElementById('view-nueva'));
+  _docsList  = new DocsList(document.getElementById('view-docs'));
   _apiTester = new ApiTester(document.getElementById('view-api'));
 
   await loadIssuerConfig();
   await authenticate();
-  gotoView('dashboard');
-   // Cargar historial desde BD
   await loadHistory();
+  gotoView('dashboard');
 
   window.addEventListener('message', handlePosMessage);
 });
+
+// ── Auth ──────────────────────────────────────────────────────
 
 async function authenticate() {
   setConnStatus('connecting', 'Conectando con Koywe…');
@@ -65,6 +66,8 @@ function setConnStatus(status, label) {
   if (dot) dot.className   = `conn-dot ${status}`;
   if (lbl) lbl.textContent = label;
 }
+
+// ── Config del emisor ─────────────────────────────────────────
 
 async function loadIssuerConfig() {
   try {
@@ -90,6 +93,59 @@ async function loadIssuerConfig() {
   }
 }
 
+// ── Historial desde BD ────────────────────────────────────────
+
+async function loadHistory() {
+  try {
+    const { fetchHistory } = await import('./api/koywe.js');
+    const res = await fetchHistory({ limit: 50 });
+    if (!res?.documents?.length) return;
+
+    const docs = res.documents.map(d => ({
+      document_id: d.id,
+      doc_number:  d.doc_number,
+      type:        d.type,
+      total:       d.total,
+      date:        new Date(d.issued_at).toLocaleDateString('es-CL'),
+      status:      d.status === 'ok' ? 'ok' : 'pending',
+      raw: {
+        document_id: d.koywe_document_id ?? d.id,
+        electronic_document: {
+          document_xml: d.xml_base64 ?? null,
+          document_pdf: d.pdf_base64 ?? null,
+        },
+        totals: {
+          net_amount:   d.net_amount,
+          taxes_amount: d.tax_amount,
+          total_amount: d.total,
+        },
+        header: {
+          document_number:      d.doc_number,
+          receiver_tax_id_code: d.receiver_rut  ?? null,
+          receiver_legal_name:  d.receiver_name ?? null,
+        },
+        result: { status: d.status === 'ok' ? 0 : 1 },
+      },
+    }));
+
+    setState({ docs });
+    setState({
+      stats: {
+        total:    docs.length,
+        boletas:  docs.filter(d => d.type === '37' || d.type === '41').length,
+        facturas: docs.filter(d => d.type === '2'  || d.type === '32').length,
+        nc:       docs.filter(d => d.type === '16').length,
+      },
+    });
+
+    notify(`${docs.length} documentos cargados desde BD`, 'info', 3000);
+  } catch (e) {
+    console.warn('No se pudo cargar historial:', e.message);
+  }
+}
+
+// ── PostMessage QuickPOS ──────────────────────────────────────
+
 function handlePosMessage(event) {
   const allowed = window.__FCL_ALLOWED_ORIGINS__ ?? [];
   if (allowed.length && !allowed.includes(event.origin)) return;
@@ -108,6 +164,8 @@ function handlePosMessage(event) {
       break;
   }
 }
+
+// ── Globales ──────────────────────────────────────────────────
 
 window.saveIssuerConfig = function () {
   const issuer = {
@@ -128,53 +186,3 @@ window.testConnection = async function () {
   notify('Probando conexión…', 'info', 2000);
   await authenticate();
 };
-async function loadHistory() {
-  try {
-    const { fetchHistory } = await import('./api/koywe.js');
-    const res = await fetchHistory({ limit: 50 });
-    if (!res?.documents?.length) return;
-
-    // Convertir formato BD al formato del state
-    const docs = res.documents.map(d => ({
-      document_id: d.id,
-      doc_number:  d.doc_number,
-      type:        d.type,
-      total:       d.total,
-      date:        new Date(d.issued_at).toLocaleDateString('es-CL'),
-      status:      d.status === 'ok' ? 'ok' : 'pending',
-      raw: {
-        document_id:        d.id,
-        electronic_document: {
-          document_xml: d.xml_base64 ?? null,
-          document_pdf: d.pdf_base64 ?? null,
-        },
-        totals: {
-          net_amount:   d.net_amount,
-          taxes_amount: d.tax_amount,
-          total_amount: d.total,
-        },
-        header: {
-          document_number:    d.doc_number,
-          receiver_tax_id_code: d.receiver_rut  ?? null,
-          receiver_legal_name:  d.receiver_name ?? null,
-        },
-        result: { status: d.status === 'ok' ? 0 : 1 },
-      },
-    }));
-
-    setState({ docs });
-    // Actualizar estadísticas
-    setState({
-      stats: {
-        total:    docs.length,
-        boletas:  docs.filter(d => d.type === '37' || d.type === '41').length,
-        facturas: docs.filter(d => d.type === '2'  || d.type === '32').length,
-        nc:       docs.filter(d => d.type === '16').length,
-      },
-    });
-
-    notify(`${docs.length} documentos cargados desde BD`, 'info', 3000);
-  } catch (e) {
-    console.warn('No se pudo cargar historial:', e.message);
-  }
-}
