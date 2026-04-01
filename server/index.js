@@ -36,9 +36,26 @@ app.use((_req, res, next) => {
 });
 
 // ── Rutas ─────────────────────────────────────────────────────
-app.use('/health', healthRouter);
-app.use('/api/koywe', apiLimiter, koyweRouter);
-app.use('/api/pos', apiKeyAuth, posRouter);
+// ── Middleware opcional de tenant ─────────────────────────────
+async function optionalTenantAuth(req, _res, next) {
+  const key = req.headers['x-api-key'];
+  if (key) {
+    const { createHash }       = await import('crypto');
+    const { getTenantByApiKey } = await import('./services/db.js');
+    const keyHash = createHash('sha256').update(key).digest('hex');
+    const record  = await getTenantByApiKey(keyHash);
+    if (record) {
+      req.tenantId = record.tenant_id;
+      req.tenant   = record.tenants;
+    }
+  }
+  next();
+}
+
+// ── Rutas ─────────────────────────────────────────────────────
+app.use('/health',    healthRouter);
+app.use('/api/koywe', apiLimiter, optionalTenantAuth, koyweRouter);
+app.use('/api/pos',   apiKeyAuth, posRouter);
 
 // ── Frontend estático (producción) ────────────────────────────
 if (config.isProduction) {
