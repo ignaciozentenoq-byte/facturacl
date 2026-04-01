@@ -83,6 +83,32 @@ koyweRouter.get('/documents/:id', async (req, res) => {
     handleError(err, res);
   }
 });
+// GET /api/koywe/history
+// Retorna los últimos documentos guardados en Supabase
+koyweRouter.get('/history', async (req, res) => {
+  try {
+    const limit  = parseInt(req.query.limit  ?? '50', 10);
+    const offset = parseInt(req.query.offset ?? '0',  10);
+
+    const { data, error } = await import('../services/db.js').then(m => 
+      m.supabase
+        .from('documents')
+        .select('id, doc_number, type, total, net_amount, tax_amount, status, sii_status, receiver_rut, receiver_name, pos_sale_id, xml_base64, pdf_base64, issued_at')
+        .order('issued_at', { ascending: false })
+        .range(offset, offset + limit - 1)
+    );
+
+    if (error) {
+      logger.error({ error }, 'Error al obtener historial');
+      return res.json({ documents: [] });
+    }
+
+    res.json({ documents: data ?? [] });
+  } catch (err) {
+    logger.error({ err }, 'Error en historial');
+    res.json({ documents: [] });
+  }
+});
 
 function handleError(err, res) {
   if (err.name === 'KoyweError') {
