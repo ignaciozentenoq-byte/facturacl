@@ -53,6 +53,10 @@ export const config = {
     level:  get('LOG_LEVEL',  'info'),
     pretty: get('LOG_PRETTY', 'false') === 'true',
   },
+
+  // Tenant por defecto cuando no hay X-API-Key en el request
+  defaultTenantId: get('DEFAULT_TENANT_ID', ''),
+};
   // ── Supabase ──────────────────────────────────────────────────
   supabase: {
     url:        get('SUPABASE_URL',        ''),
