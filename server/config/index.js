@@ -53,4 +53,10 @@ export const config = {
     level:  get('LOG_LEVEL',  'info'),
     pretty: get('LOG_PRETTY', 'false') === 'true',
   },
+  // ── Supabase ──────────────────────────────────────────────────
+  supabase: {
+    url:        get('SUPABASE_URL',        ''),
+    serviceKey: get('SUPABASE_SERVICE_KEY', ''),
+    dbUrl:      get('DATABASE_URL',         ''),
+  },
 };
