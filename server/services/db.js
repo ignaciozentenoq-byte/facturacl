@@ -24,6 +24,11 @@ export const supabase = config.supabase?.url
 // ── Helper para guardar un DTE emitido ───────────────────────
 export async function saveDocument({ tenantId, saleId, terminalId, koyweResponse, posPayload }) {
   if (!supabase) return null;
+   logger.info({ 
+    supabaseUrl: config.supabase?.url ? 'OK' : 'FALTA',
+    supabaseKey: config.supabase?.serviceKey ? 'OK' : 'FALTA',
+    supabaseClient: supabase ? 'inicializado' : 'NULL',
+  }, 'Intentando guardar DTE en BD');
 
   try {
     const header = koyweResponse.header ?? {};
