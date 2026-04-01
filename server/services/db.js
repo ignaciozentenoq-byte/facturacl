@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { config }       from '../config/index.js';
 import logger           from '../middleware/logger.js';
+import { config } from '../config/index.js';
 
 // ── Validar que las variables están configuradas ──────────────
 if (!config.supabase?.url || !config.supabase?.serviceKey) {
