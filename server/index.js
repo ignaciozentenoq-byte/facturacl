@@ -18,6 +18,8 @@ import { posRouter }        from './routes/pos.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app       = express();
+// Railway y Azure tienen un proxy delante — necesario para rate limiter e IPs reales
+app.set('trust proxy', 1);
 
 // ── Seguridad HTTP ────────────────────────────────────────────
 // CSP desactivado — el frontend usa onclick inline en el HTML
