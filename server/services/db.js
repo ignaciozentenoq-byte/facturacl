@@ -8,11 +8,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { config }       from '../config/index.js';
 import logger           from '../middleware/logger.js';
-import { config } from '../config/index.js';
 
 // ── Validar que las variables están configuradas ──────────────
 if (!config.supabase?.url || !config.supabase?.serviceKey) {
   logger.warn('Supabase no configurado — BD desactivada. Agrega SUPABASE_URL y SUPABASE_SERVICE_KEY.');
+} else {
+  logger.info({ url: config.supabase.url }, 'Supabase configurado correctamente');
 }
 
 // ── Cliente singleton ─────────────────────────────────────────
@@ -24,12 +25,17 @@ export const supabase = config.supabase?.url
 
 // ── Helper para guardar un DTE emitido ───────────────────────
 export async function saveDocument({ tenantId, saleId, terminalId, koyweResponse, posPayload }) {
-  if (!supabase) return null;
-   logger.info({ 
-    supabaseUrl: config.supabase?.url ? 'OK' : 'FALTA',
-    supabaseKey: config.supabase?.serviceKey ? 'OK' : 'FALTA',
-    supabaseClient: supabase ? 'inicializado' : 'NULL',
+
+  logger.info({
+    supabaseUrl:    config.supabase?.url        ? 'OK' : 'FALTA',
+    supabaseKey:    config.supabase?.serviceKey ? 'OK' : 'FALTA',
+    supabaseClient: supabase                    ? 'inicializado' : 'NULL',
   }, 'Intentando guardar DTE en BD');
+
+  if (!supabase) {
+    logger.warn('Supabase es null — documento no guardado');
+    return null;
+  }
 
   try {
     const header = koyweResponse.header ?? {};
@@ -39,7 +45,7 @@ export async function saveDocument({ tenantId, saleId, terminalId, koyweResponse
     const { data, error } = await supabase
       .from('documents')
       .insert({
-        tenant_id:          tenantId,
+        tenant_id:          tenantId   ?? null,
         sale_id:            saleId     ?? null,
         terminal_id:        terminalId ?? null,
         koywe_document_id:  koyweResponse.document_id ?? null,
@@ -67,20 +73,19 @@ export async function saveDocument({ tenantId, saleId, terminalId, koyweResponse
       .single();
 
     if (error) {
-      logger.error({ error }, 'Error al guardar documento en BD');
+      logger.error({ error: error.message, code: error.code, details: error.details }, 'Error Supabase al guardar documento');
       return null;
     }
 
-    logger.info({ document_id: data.id, koywe_id: koyweResponse.document_id }, 'DTE guardado en BD');
+    logger.info({ document_id: data.id, koywe_id: koyweResponse.document_id }, 'DTE guardado en BD correctamente');
     return data;
 
   } catch (err) {
-    logger.error({ 
-      err: err.message,
-      stack: err.stack,
-      supabaseUrl: config.supabase?.url ? 'configurado' : 'FALTA',
-      supabaseKey: config.supabase?.serviceKey ? 'configurado' : 'FALTA',
-    }, 'Error inesperado al guardar documento');
+    logger.error({
+      err:          err.message,
+      supabaseUrl:  config.supabase?.url        ? 'configurado' : 'FALTA',
+      supabaseKey:  config.supabase?.serviceKey ? 'configurado' : 'FALTA',
+    }, 'Error inesperado al guardar documento en BD');
     return null;
   }
 }
