@@ -128,3 +128,53 @@ window.testConnection = async function () {
   notify('Probando conexión…', 'info', 2000);
   await authenticate();
 };
+async function loadHistory() {
+  try {
+    const { fetchHistory } = await import('./api/koywe.js');
+    const res = await fetchHistory({ limit: 50 });
+    if (!res?.documents?.length) return;
+
+    // Convertir formato BD al formato del state
+    const docs = res.documents.map(d => ({
+      document_id: d.id,
+      doc_number:  d.doc_number,
+      type:        d.type,
+      total:       d.total,
+      date:        new Date(d.issued_at).toLocaleDateString('es-CL'),
+      status:      d.status === 'ok' ? 'ok' : 'pending',
+      raw: {
+        document_id:        d.id,
+        electronic_document: {
+          document_xml: d.xml_base64 ?? null,
+          document_pdf: d.pdf_base64 ?? null,
+        },
+        totals: {
+          net_amount:   d.net_amount,
+          taxes_amount: d.tax_amount,
+          total_amount: d.total,
+        },
+        header: {
+          document_number:    d.doc_number,
+          receiver_tax_id_code: d.receiver_rut  ?? null,
+          receiver_legal_name:  d.receiver_name ?? null,
+        },
+        result: { status: d.status === 'ok' ? 0 : 1 },
+      },
+    }));
+
+    setState({ docs });
+    // Actualizar estadísticas
+    setState({
+      stats: {
+        total:    docs.length,
+        boletas:  docs.filter(d => d.type === '37' || d.type === '41').length,
+        facturas: docs.filter(d => d.type === '2'  || d.type === '32').length,
+        nc:       docs.filter(d => d.type === '16').length,
+      },
+    });
+
+    notify(`${docs.length} documentos cargados desde BD`, 'info', 3000);
+  } catch (e) {
+    console.warn('No se pudo cargar historial:', e.message);
+  }
+}
