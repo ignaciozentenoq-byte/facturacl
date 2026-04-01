@@ -18,11 +18,11 @@ import { posRouter }        from './routes/pos.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app       = express();
+
 // Railway y Azure tienen un proxy delante — necesario para rate limiter e IPs reales
 app.set('trust proxy', 1);
 
 // ── Seguridad HTTP ────────────────────────────────────────────
-// CSP desactivado — el frontend usa onclick inline en el HTML
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(corsMiddleware);
 app.use(compression());
@@ -35,22 +35,21 @@ app.use((_req, res, next) => {
   next();
 });
 
-
-// ── Rutas ─────────────────────────────────────────────────────
-app.use('/health',    healthRouter);
-app.use('/api/koywe', apiLimiter, optionalTenantAuth, koyweRouter);
-app.use('/api/pos',   apiKeyAuth, posRouter);
 // ── Middleware opcional de tenant ─────────────────────────────
 async function optionalTenantAuth(req, _res, next) {
   const key = req.headers['x-api-key'];
   if (key) {
-    const { createHash }       = await import('crypto');
-    const { getTenantByApiKey } = await import('./services/db.js');
-    const keyHash = createHash('sha256').update(key).digest('hex');
-    const record  = await getTenantByApiKey(keyHash);
-    if (record) {
-      req.tenantId = record.tenant_id;
-      req.tenant   = record.tenants;
+    try {
+      const { createHash }        = await import('crypto');
+      const { getTenantByApiKey } = await import('./services/db.js');
+      const keyHash = createHash('sha256').update(key).digest('hex');
+      const record  = await getTenantByApiKey(keyHash);
+      if (record) {
+        req.tenantId = record.tenant_id;
+        req.tenant   = record.tenants;
+      }
+    } catch (err) {
+      logger.warn({ err: err.message }, 'Error en optionalTenantAuth');
     }
   }
   next();
@@ -100,7 +99,6 @@ const server = app.listen(config.port, () => {
 `);
 });
 
-// Graceful shutdown
 function gracefulShutdown(signal) {
   logger.info(`${signal} recibido, cerrando servidor…`);
   server.close(() => { logger.info('Servidor cerrado'); process.exit(0); });
