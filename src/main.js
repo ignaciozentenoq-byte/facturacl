@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadIssuerConfig();
   await authenticate();
   gotoView('dashboard');
+   // Cargar historial desde BD
+  await loadHistory();
 
   window.addEventListener('message', handlePosMessage);
 });
