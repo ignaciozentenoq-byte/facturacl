@@ -69,7 +69,12 @@ export async function saveDocument({ tenantId, saleId, terminalId, koyweResponse
     return data;
 
   } catch (err) {
-    logger.error({ err }, 'Error inesperado al guardar documento');
+    logger.error({ 
+      err: err.message,
+      stack: err.stack,
+      supabaseUrl: config.supabase?.url ? 'configurado' : 'FALTA',
+      supabaseKey: config.supabase?.serviceKey ? 'configurado' : 'FALTA',
+    }, 'Error inesperado al guardar documento');
     return null;
   }
 }
