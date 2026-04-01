@@ -64,3 +64,9 @@ export async function listDocuments(params = {}) {
 export async function getDocument(documentId) {
   return request('GET', `/documents/${documentId}`);
 }
+/**
+ * Obtiene el historial de documentos desde la BD
+ */
+export async function fetchHistory({ limit = 50, offset = 0 } = {}) {
+  return request('GET', `/history?limit=${limit}&offset=${offset}`);
+}
