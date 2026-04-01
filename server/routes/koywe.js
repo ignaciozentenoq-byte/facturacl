@@ -34,9 +34,9 @@ koyweRouter.post('/documents', documentLimiter, async (req, res) => {
   try {
     const data = await createDocument(parse.data);
 
-    // Guardar en BD en paralelo — no bloquea la respuesta
+      // Guardar en BD en paralelo — no bloquea la respuesta
     saveDocument({
-      tenantId:      null,
+      tenantId:      req.tenantId ?? null,
       saleId:        null,
       terminalId:    null,
       koyweResponse: data,
