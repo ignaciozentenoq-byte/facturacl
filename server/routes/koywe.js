@@ -7,6 +7,7 @@ import { config }                                           from '../config/inde
 import { documentLimiter }                                  from '../middleware/rateLimiter.js';
 import logger                                               from '../middleware/logger.js';
 
+
 export const koyweRouter = Router();
 
 // POST /api/koywe/documents
@@ -36,7 +37,7 @@ koyweRouter.post('/documents', documentLimiter, async (req, res) => {
 
       // Guardar en BD en paralelo — no bloquea la respuesta
     saveDocument({
-      tenantId:      req.tenantId ?? null,
+      tenantId:      req.tenantId ?? config.defaultTenantId ?? null,
       saleId:        null,
       terminalId:    null,
       koyweResponse: data,
