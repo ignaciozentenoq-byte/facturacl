@@ -35,7 +35,11 @@ app.use((_req, res, next) => {
   next();
 });
 
+
 // ── Rutas ─────────────────────────────────────────────────────
+app.use('/health',    healthRouter);
+app.use('/api/koywe', apiLimiter, optionalTenantAuth, koyweRouter);
+app.use('/api/pos',   apiKeyAuth, posRouter);
 // ── Middleware opcional de tenant ─────────────────────────────
 async function optionalTenantAuth(req, _res, next) {
   const key = req.headers['x-api-key'];
