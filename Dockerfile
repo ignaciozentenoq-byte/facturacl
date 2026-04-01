@@ -1,7 +1,3 @@
-# FacturaCL — Dockerfile multi-stage
-# Stage 1: build frontend con Vite
-# Stage 2: imagen producción mínima
-
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
