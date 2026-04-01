@@ -94,7 +94,7 @@ koyweRouter.get('/history', async (req, res) => {
     const { data, error } = await import('../services/db.js').then(m => 
       m.supabase
         .from('documents')
-        .select('id, doc_number, type, total, net_amount, tax_amount, status, sii_status, receiver_rut, receiver_name, pos_sale_id, xml_base64, pdf_base64, issued_at')
+        .select('id, koywe_document_id, doc_number, type, total, net_amount, tax_amount, status, sii_status, receiver_rut, receiver_name, pos_sale_id, xml_base64, pdf_base64, issued_at')
         .order('issued_at', { ascending: false })
         .range(offset, offset + limit - 1)
     );
