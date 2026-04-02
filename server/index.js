@@ -18,6 +18,7 @@ import { posRouter }        from './routes/pos.js';
 import { authRouter }       from './routes/auth.js';
 import { productsRouter }   from './routes/products.js';
 import { tenantsRouter }    from './routes/tenants.js';
+import { salesRouter }      from './routes/sales.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app       = express();
@@ -64,6 +65,7 @@ app.use('/api/auth',  apiLimiter, authRouter);
 app.use('/api/koywe', apiLimiter, optionalTenantAuth, koyweRouter);
 app.use('/api/pos/products', apiLimiter, productsRouter);
 app.use('/api/pos/tenants',  apiLimiter, tenantsRouter);
+app.use('/api/pos/sales',    apiLimiter, salesRouter);
 app.use('/api/pos',   apiKeyAuth, posRouter);
 
 // ── Frontend estático (producción) ────────────────────────────
