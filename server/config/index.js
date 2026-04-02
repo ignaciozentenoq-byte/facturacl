@@ -49,7 +49,14 @@ export const config = {
     level:  get('LOG_LEVEL',  'info'),
     pretty: get('LOG_PRETTY', 'false') === 'true',
   },
+  // ── JWT ────────────────────────────────────────────────────────
+  jwt: {
+    secret:     get('JWT_SECRET', 'dev-jwt-secret-change-in-production'),
+    expiresIn:  get('JWT_EXPIRES_IN', '8h'),
+    refreshExpiresIn: get('JWT_REFRESH_EXPIRES_IN', '30d'),
+  },
 
+  // ── Supabase ──────────────────────────────────────────────────
   supabase: {
     url:        get('SUPABASE_URL',         ''),
     serviceKey: get('SUPABASE_SERVICE_KEY', ''),
