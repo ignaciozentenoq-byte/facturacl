@@ -4,6 +4,7 @@ import { PosDocumentSchema } from '../validators/documentSchema.js';
 import { buildKoywePayload } from '../services/documentBuilder.js';
 import { createDocument }    from '../services/koyweClient.js';
 import { saveDocument }      from '../services/db.js';
+import { enqueueDocument }   from '../services/emissionWorker.js';
 import { posLimiter }        from '../middleware/rateLimiter.js';
 import logger                from '../middleware/logger.js';
 
@@ -13,14 +14,10 @@ export const posRouter = Router();
 posRouter.post('/emit', posLimiter, async (req, res) => {
   const parse = PosDocumentSchema.safeParse(req.body);
   if (!parse.success) {
-    logger.warn({ issues: parse.error.issues }, 'Validación POS fallida');
     return res.status(400).json({
       ok:     false,
       error:  'VALIDATION_ERROR',
-      issues: parse.error.issues.map(i => ({
-        field:   i.path.join('.'),
-        message: i.message,
-      })),
+      issues: parse.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })),
     });
   }
 
@@ -37,30 +34,26 @@ posRouter.post('/emit', posLimiter, async (req, res) => {
   });
 
   try {
-    const data    = await createDocument(koywePayload);
+    // Intentar emisión inmediata
+    const data      = await createDocument(koywePayload);
     const docNumber = data.header?.document_number ?? data.document_id;
     const pdfBase64 = data.electronic_document?.document_pdf ?? null;
     const xmlBase64 = data.electronic_document?.document_xml ?? null;
 
-    // Guardar en BD (no bloquea la respuesta si falla)
+    // Guardar en BD
     saveDocument({
       tenantId:      req.tenantId ?? null,
       saleId:        null,
       terminalId:    null,
       koyweResponse: data,
       posPayload:    parse.data,
-    }).catch(err => logger.error({ err }, 'Error guardando DTE en BD'));
+    }).catch(err => logger.error({ err: err.message }, 'Error guardando DTE en BD'));
 
-    logger.info({
-      document_id: data.document_id,
-      doc_number:  docNumber,
-      type:        document_type,
-      pos_sale_id,
-      pos_terminal,
-    }, 'DTE emitido desde caja POS');
+    logger.info({ doc_number: docNumber, type: document_type, pos_sale_id }, 'DTE emitido desde caja');
 
-    res.status(201).json({
+    return res.status(201).json({
       ok:          true,
+      queued:      false,
       document_id: data.document_id,
       doc_number:  docNumber,
       type:        document_type,
@@ -75,20 +68,55 @@ posRouter.post('/emit', posLimiter, async (req, res) => {
     });
 
   } catch (err) {
-    if (err.name === 'KoyweError') {
-      logger.error({ code: err.code, pos_sale_id }, `Error Koywe en caja: ${err.message}`);
-      return res.status(err.statusCode).json({
-        ok:      false,
-        error:   err.code,
-        message: err.message,
-      });
-    }
-    logger.error({ err, pos_sale_id }, 'Error inesperado en emisión POS');
-    res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: 'Error interno' });
+    // Koywe falló — agregar a la cola para reintento automático
+    logger.warn({
+      error:       err.message,
+      pos_sale_id,
+      pos_terminal,
+    }, 'Koywe no disponible — agregando a cola de emisión');
+
+    const queued = await enqueueDocument({
+      tenantId:   req.tenantId ?? null,
+      saleId:     null,
+      terminalId: null,
+      payload:    koywePayload,
+      posPayload: parse.data,
+    });
+
+    // La venta siempre responde OK — la caja no se detiene
+    return res.status(202).json({
+      ok:          true,
+      queued:      true,              // indica que está en cola
+      queue_id:    queued?.id ?? null,
+      document_id: null,
+      doc_number:  null,
+      type:        document_type,
+      total:       koywePayload.totals.total_amount,
+      issued_at:   new Date().toISOString(),
+      has_pdf:     false,
+      sii_status:  'queued',
+      sii_message: 'DTE en cola — se emitirá automáticamente cuando Koywe esté disponible',
+      pos_sale_id: pos_sale_id ?? null,
+    });
   }
 });
 
 // GET /api/pos/health
 posRouter.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'facturacl-pos', ts: new Date().toISOString() });
+});
+
+// GET /api/pos/queue-status/:pos_sale_id
+// QuickPOS puede consultar si un DTE en cola ya fue emitido
+posRouter.get('/queue-status/:pos_sale_id', async (req, res) => {
+  const { supabase } = await import('../services/db.js');
+  if (!supabase) return res.json({ status: 'unknown' });
+
+  const { data } = await supabase
+    .from('emission_queue')
+    .select('status, document_id, error_message, attempts')
+    .eq('pos_sale_id', req.params.pos_sale_id)
+    .single();
+
+  res.json(data ?? { status: 'not_found' });
 });
