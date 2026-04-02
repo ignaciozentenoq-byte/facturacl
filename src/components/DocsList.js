@@ -1,5 +1,4 @@
 // src/components/DocsList.js
-
 import { subscribe, getState } from '../lib/state.js';
 import { fmtCLP, DOC_TYPE_LABELS } from '../lib/tax.js';
 import { open as openModal } from './modal.js';
@@ -44,7 +43,7 @@ export class DocsList {
         </thead>
         <tbody>
           ${docs.map(d => `
-            <tr data-id="${esc(d.document_id)}">
+            <tr data-id="${esc(String(d.document_id))}">
               <td class="mono accent">${esc(String(d.doc_number ?? d.document_id ?? '—'))}</td>
               <td><span class="doc-type-chip ${TYPE_CHIPS[d.type] ?? 'chip-boleta'}">${TYPE_SHORT[d.type] ?? d.type}</span></td>
               <td class="mono fw6">${fmtCLP(d.total)}</td>
@@ -63,9 +62,14 @@ export class DocsList {
     container.querySelectorAll('tr[data-id]').forEach(row => {
       const id  = row.dataset.id;
       const doc = docs.find(d => String(d.document_id) === id);
-      const fn  = () => doc && this._viewDoc(doc);
+      if (!doc) return;
+      const fn = () => this._viewDoc(doc);
+      row.style.cursor = 'pointer';
       row.addEventListener('click', fn);
-      row.querySelector('.btn-ver')?.addEventListener('click', e => { e.stopPropagation(); fn(); });
+      row.querySelector('.btn-ver')?.addEventListener('click', e => {
+        e.stopPropagation();
+        fn();
+      });
     });
   }
 
@@ -73,6 +77,20 @@ export class DocsList {
     const raw    = doc.raw ?? {};
     const docNum = doc.doc_number ?? doc.document_id;
     const label  = DOC_TYPE_LABELS[doc.type] ?? doc.type;
+    const pdfB64 = raw.electronic_document?.document_pdf ?? null;
+    const xmlB64 = raw.electronic_document?.document_xml ?? null;
+
+    // Guardar en window para descarga (evita el problema de atributos HTML muy largos)
+    window._currentDocB64  = pdfB64 ?? xmlB64;
+    window._currentDocNum  = docNum;
+    window._currentDocMime = pdfB64 ? 'application/pdf' : 'application/xml';
+    window._currentDocExt  = pdfB64 ? 'pdf' : 'xml';
+
+    const downloadBtn = (pdfB64 || xmlB64) ? `
+      <button onclick="window._downloadCurrentDoc()"
+        class="btn-primary" style="margin-bottom:12px;width:100%">
+        ⬇ Descargar ${pdfB64 ? 'PDF' : 'XML'} del DTE
+      </button>` : '';
 
     openModal(`DTE · N° ${docNum}`, `
       <div style="text-align:center;padding:8px 0 16px">
@@ -86,17 +104,39 @@ export class DocsList {
         ${dRow('Total',        fmtCLP(doc.total))}
         ${dRow('Fecha',        doc.date)}
       </div>
+      ${downloadBtn}
       <details style="margin-top:12px">
         <summary style="font-size:11px;color:var(--text3);cursor:pointer">Ver respuesta completa</summary>
         <pre class="code-preview">${esc(JSON.stringify(raw, null, 2).slice(0, 3000))}</pre>
       </details>
     `);
+
+    // Función de descarga
+    window._downloadCurrentDoc = () => {
+      const b64 = window._currentDocB64;
+      if (!b64) return;
+      try {
+        const bin  = atob(b64);
+        const arr  = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const blob = new Blob([arr], { type: window._currentDocMime });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `DTE-${window._currentDocNum}.${window._currentDocExt}`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error('Error al descargar DTE:', e);
+      }
+    };
   }
 }
 
 function dRow(l, v) {
   return `<div class="result-row"><span class="result-lbl">${l}</span><span class="result-val">${esc(String(v ?? ''))}</span></div>`;
 }
+
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
